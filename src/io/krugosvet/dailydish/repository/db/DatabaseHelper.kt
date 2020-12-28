@@ -9,20 +9,20 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.sql.Connection
 
-object DatabaseHelper {
+private const val URL = "jdbc:sqlite:/tmp/data/data.db"
+private const val DRIVER = "org.sqlite.JDBC"
 
-    private const val URL = "jdbc:sqlite:/tmp/data/data.db"
-    private const val DRIVER = "org.sqlite.JDBC"
+class DatabaseHelper {
 
-    fun connect() {
-        Database.connect(URL, DRIVER)
+  fun connect() {
+    Database.connect(URL, DRIVER)
 
-        TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
+    TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
 
-        transaction {
-            addLogger(StdOutSqlLogger)
+    transaction {
+      addLogger(StdOutSqlLogger)
 
-            SchemaUtils.create (MealTable)
-        }
+      SchemaUtils.create(MealTable)
     }
+  }
 }

@@ -35,6 +35,8 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
     implementation("org.xerial:sqlite-jdbc:3.30.1")
+
+    implementation("org.koin:koin-ktor:2.2.1")
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")
