@@ -1,9 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 val logback_version: String by project
 val ktor_version: String by project
 val kotlin_version: String by project
+val exposed_version: String by project
 
 plugins {
     application
@@ -30,6 +28,13 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-gson:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+
+    // DB
+    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
+    implementation("org.xerial:sqlite-jdbc:3.30.1")
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")

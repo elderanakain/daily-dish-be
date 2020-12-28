@@ -1,11 +1,14 @@
 package io.krugosvet.dailydish
 
 import com.google.gson.Gson
+import io.krugosvet.dailydish.repository.db.DatabaseHelper
+import io.krugosvet.dailydish.repository.db.entity.Meal
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import org.jetbrains.exposed.sql.transactions.transaction
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -21,12 +24,14 @@ fun Application.module() {
         }
     }
 
+    DatabaseHelper.connect()
+
     routing {
         get("/") {
-            val message = Gson().toJson(mapOf("hello" to "world"))
+            val message = transaction { Meal.all().map { it.toString() } }
+            val json = Gson().toJson(mapOf("data" to message))
 
-            call.respond(message)
+            call.respond(json)
         }
     }
 }
-
