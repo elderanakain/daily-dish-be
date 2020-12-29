@@ -9,28 +9,30 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.koin.ktor.ext.get
+import org.koin.ktor.ext.get as koinGet
 
 @Suppress("unused") // Referenced in application.conf
 fun Application.module(
-  mealRepository: MealRepository = get(),
-  dispatchers: Dispatchers = get(),
+  mealRepository: MealRepository = koinGet(),
+  dispatchers: Dispatchers = koinGet(),
 ) {
 
   routing {
-    get("meal") {
-      val meals = mealRepository.meals
+    route("meal") {
+      get {
+        val meals = mealRepository.meals
 
-      call.respond(HttpStatusCode.OK, meals)
-    }
+        call.respond(HttpStatusCode.OK, meals)
+      }
 
-    post("meal") {
-      withContext(dispatchers.IO) {
-        val meal = call.receive<Meal>()
+      post {
+        withContext(dispatchers.IO) {
+          val meal = call.receive<Meal>()
 
-        mealRepository.add(meal)
+          mealRepository.add(meal)
 
-        call.respond(HttpStatusCode.Created)
+          call.respond(HttpStatusCode.Created)
+        }
       }
     }
   }
