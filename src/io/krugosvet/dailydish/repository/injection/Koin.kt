@@ -6,6 +6,7 @@ import io.krugosvet.dailydish.repository.MealRepositoryImpl
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
 import io.krugosvet.dailydish.repository.db.entity.MealDAO
 import io.krugosvet.dailydish.repository.dto.MealFactory
+import kotlinx.coroutines.Dispatchers
 import org.koin.dsl.module
 
 val repositoryModule = module {
@@ -29,5 +30,9 @@ val repositoryModule = module {
 
   single<MealRepository> {
     MealRepositoryImpl(get(), get())
+  }
+
+  single {
+    Dispatchers
   }
 }
