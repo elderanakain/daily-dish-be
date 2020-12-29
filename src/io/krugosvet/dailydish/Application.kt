@@ -1,5 +1,6 @@
 package io.krugosvet.dailydish
 
+import io.krugosvet.dailydish.injection.configModule
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
 import io.krugosvet.dailydish.repository.injection.repositoryModule
 import io.ktor.application.*
@@ -19,7 +20,7 @@ fun Application.main() {
   install(CallLogging)
 
   install(Koin) {
-    modules(repositoryModule)
+    modules(repositoryModule, configModule)
   }
 
   install(ContentNegotiation) {

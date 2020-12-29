@@ -1,6 +1,5 @@
 package io.krugosvet.dailydish
 
-import com.google.gson.Gson
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.dto.Meal
 import io.ktor.application.*
@@ -15,16 +14,14 @@ import org.koin.ktor.ext.get
 @Suppress("unused") // Referenced in application.conf
 fun Application.module(
   mealRepository: MealRepository = get(),
-  gson: Gson = get(),
   dispatchers: Dispatchers = get(),
 ) {
 
   routing {
     get("meal") {
       val meals = mealRepository.meals
-      val json = gson.toJson(meals)
 
-      call.respondText(json, ContentType.Application.Json, HttpStatusCode.OK)
+      call.respond(HttpStatusCode.OK, meals)
     }
 
     post("meal") {
