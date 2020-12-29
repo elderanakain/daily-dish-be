@@ -9,6 +9,7 @@ import io.ktor.http.content.*
 import io.ktor.routing.*
 import org.koin.ktor.ext.Koin
 import org.koin.ktor.ext.get
+import java.text.DateFormat
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -22,7 +23,9 @@ fun Application.main() {
   }
 
   install(ContentNegotiation) {
-    gson {}
+    gson {
+      setDateFormat(DateFormat.LONG)
+    }
   }
 
   install(Compression) {
