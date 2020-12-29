@@ -1,6 +1,5 @@
 package io.krugosvet.dailydish.repository.injection
 
-import com.google.gson.GsonBuilder
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.MealRepositoryImpl
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
@@ -12,16 +11,11 @@ import org.koin.dsl.module
 val repositoryModule = module {
 
   single {
-    GsonBuilder()
-      .create()
-  }
-
-  single {
     DatabaseHelper()
   }
 
   single {
-    MealFactory()
+    MealFactory(get())
   }
 
   single {
