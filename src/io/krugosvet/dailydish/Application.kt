@@ -3,14 +3,14 @@ package io.krugosvet.dailydish
 import io.krugosvet.dailydish.injection.configModule
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
 import io.krugosvet.dailydish.repository.injection.repositoryModule
+import io.krugosvet.dailydish.route.mealRouting
 import io.ktor.application.*
 import io.ktor.features.*
-import io.ktor.gson.*
 import io.ktor.http.content.*
 import io.ktor.routing.*
+import io.ktor.serialization.*
 import org.koin.ktor.ext.Koin
 import org.koin.ktor.ext.get
-import java.text.DateFormat
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -24,9 +24,7 @@ fun Application.main() {
   }
 
   install(ContentNegotiation) {
-    gson {
-      setDateFormat(DateFormat.LONG)
-    }
+    json()
   }
 
   install(Compression) {
@@ -41,5 +39,6 @@ fun Application.main() {
     static("/static") {
       resources("static")
     }
+    mealRouting()
   }
 }

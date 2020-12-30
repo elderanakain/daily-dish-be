@@ -8,12 +8,12 @@ class Config(
   private val appConfig: HoconApplicationConfig
 ) {
 
-  val host: String by lazy {
-    appConfig.property("ktor.deployment.host").getString()
-  }
-
-  val port: String by lazy {
-    appConfig.property("ktor.deployment.port").getString()
+  val dbUrl: String by lazy {
+    when (appConfig.property("ktor.deployment.environment").getString()) {
+      "prod" -> "jdbc:sqlite:/tmp/data/data.db"
+      "test" -> "jdbc:sqlite:/tmp/data/test_data.db"
+      else -> "jdbc:sqlite:/tmp/data/data.db"
+    }
   }
 
 }
