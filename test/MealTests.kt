@@ -80,7 +80,7 @@ class MealTests :
       title = "title",
       description = "description",
       image = "http://127.0.0.1:8081/static/image",
-      lastCookingDate = "2020-01-01T00:00:00.000+01:00"
+      lastCookingDate = "2020-01-01"
     )
 
     // when
