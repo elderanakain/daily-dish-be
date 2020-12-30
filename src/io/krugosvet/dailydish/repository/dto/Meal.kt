@@ -1,8 +1,9 @@
 package io.krugosvet.dailydish.repository.dto
 
-import io.krugosvet.dailydish.config.Config
 import io.krugosvet.dailydish.repository.db.entity.MealEntity
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Meal(
   val title: String,
   val description: String,
@@ -10,15 +11,13 @@ data class Meal(
   val lastCookingDate: String
 )
 
-class MealFactory(
-  private val config: Config
-) {
+class MealFactory {
 
   fun from(entity: MealEntity) =
     Meal(
       title = entity.title,
       description = entity.description,
-      image = "http://${config.host}:${config.port}/static/${entity.imageUri}",
+      image = entity.imageUri,
       lastCookingDate = entity.lastCookingDate.toString(),
     )
 }

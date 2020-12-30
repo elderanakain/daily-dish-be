@@ -1,5 +1,6 @@
 package io.krugosvet.dailydish.repository.db
 
+import io.krugosvet.dailydish.config.Config
 import io.krugosvet.dailydish.repository.db.entity.MealTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -7,15 +8,17 @@ import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.io.File
 import java.sql.Connection
 
-private const val URL = "jdbc:sqlite:/tmp/data/data.db"
 private const val DRIVER = "org.sqlite.JDBC"
 
-class DatabaseHelper {
+class DatabaseHelper(
+  private val config: Config,
+) {
 
   fun connect() {
-    Database.connect(URL, DRIVER)
+    Database.connect(config.dbUrl, DRIVER)
 
     TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
 
@@ -23,6 +26,12 @@ class DatabaseHelper {
       addLogger(StdOutSqlLogger)
 
       SchemaUtils.create(MealTable)
+    }
+  }
+
+  fun reset() {
+    transaction {
+      execInBatch(File("./resources/data/default_db.sql").readLines())
     }
   }
 }
