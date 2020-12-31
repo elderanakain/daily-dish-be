@@ -1,4 +1,4 @@
-# daily-dish-be
+# Daily Dish Backend
 
 Tech stack:
 - [Ktor](https://github.com/ktorio/ktor)
