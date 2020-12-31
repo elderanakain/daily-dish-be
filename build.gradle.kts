@@ -59,4 +59,8 @@ tasks {
       exceptionFormat = TestExceptionFormat.FULL
     }
   }
+
+  create("stage") {
+    dependsOn("installDist")
+  }
 }
