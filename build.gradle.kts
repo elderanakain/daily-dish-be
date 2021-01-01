@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 val logback_version: String by project
 val ktor_version = "1.5.0"
 val kotlin_version: String by project
-val exposed_version: String by project
+val exposed_version = "0.28.1"
 
 plugins {
   application
