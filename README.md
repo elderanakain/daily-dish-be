@@ -3,4 +3,7 @@
 Tech stack:
 - [Ktor](https://github.com/ktorio/ktor)
 - [Exposed](https://github.com/JetBrains/Exposed)
-- [Heroku clould](heroku.com)
+- Cloud:
+    - [Heroku](https://heroku.com)
+    - Deployed on https://daily-dish-be.herokuapp.com 
+    - PostgreSQL

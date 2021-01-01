@@ -40,7 +40,7 @@ dependencies {
   implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
   implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
   implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
-  implementation("org.xerial:sqlite-jdbc:3.30.1")
+  implementation("org.postgresql:postgresql:42.2.2")
 
   implementation("org.koin:koin-ktor:2.2.1")
 }
@@ -53,7 +53,6 @@ sourceSets["test"].resources.srcDirs("testresources")
 
 tasks {
   test {
-    environment("KTOR_DB", "./testresources/test_data.db")
     testLogging {
       events = setOf(TestLogEvent.FAILED)
       exceptionFormat = TestExceptionFormat.FULL
