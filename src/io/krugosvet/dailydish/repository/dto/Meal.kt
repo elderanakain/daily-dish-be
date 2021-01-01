@@ -18,6 +18,6 @@ class MealFactory {
       title = entity.title,
       description = entity.description,
       image = entity.imageUri,
-      lastCookingDate = entity.lastCookingDate.toString("yyyy-MM-DD"),
+      lastCookingDate = entity.lastCookingDate.toString("yyyy-MM-dd"),
     )
 }

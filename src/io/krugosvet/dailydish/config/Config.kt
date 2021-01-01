@@ -9,7 +9,15 @@ class Config(
 ) {
 
   val dbUrl: String by lazy {
-    "jdbc:sqlite:${appConfig.property("ktor.deployment.db").getString()}"
+    appConfig.property("ktor.deployment.db").getString()
+  }
+
+  val dbUser: String by lazy {
+    appConfig.property("ktor.deployment.db_username").getString()
+  }
+
+  val dbPassword: String by lazy {
+    appConfig.property("ktor.deployment.db_password").getString()
   }
 
 }
