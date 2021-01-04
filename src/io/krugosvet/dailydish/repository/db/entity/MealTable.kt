@@ -1,13 +1,15 @@
 package io.krugosvet.dailydish.repository.db.entity
 
-import org.jetbrains.exposed.dao.IntEntity
-import org.jetbrains.exposed.dao.IntEntityClass
+import org.jetbrains.exposed.dao.Entity
+import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.sql.jodatime.date
 
 object MealTable :
-  IntIdTable() {
+  IdTable<String>() {
+
+  override val id = varchar("id", 100).entityId()
 
   val title = varchar("title", 100)
   val description = varchar("description", 100)
@@ -17,10 +19,10 @@ object MealTable :
 }
 
 class MealDAO :
-  IntEntityClass<MealEntity>(MealTable, entityType = MealEntity::class.java)
+  EntityClass<String, MealEntity>(MealTable, entityType = MealEntity::class.java)
 
-class MealEntity(id: EntityID<Int>) :
-  IntEntity(id) {
+class MealEntity(id: EntityID<String>) :
+  Entity<String>(id) {
 
   var title by MealTable.title
   var description by MealTable.description

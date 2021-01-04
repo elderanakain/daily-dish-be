@@ -55,8 +55,8 @@ fun Route.mealRouting() {
   }
 }
 
-private suspend fun ApplicationCall.getIdFromParams(): Int? {
-  val id = parameters["id"]?.toIntOrNull()?.takeIf { it >= 0 }
+private suspend fun ApplicationCall.getIdFromParams(): String? {
+  val id = parameters["id"]?.takeIf { it.isNotBlank() }
 
   if (id == null) {
     respond(BadRequest)

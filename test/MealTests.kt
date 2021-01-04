@@ -34,11 +34,11 @@ class MealTests :
 
     // given
 
-    val validMeal = runBlocking { get<MealRepository>().get(2) }
+    val validMeal = runBlocking { get<MealRepository>().meals.first() }
 
     // when
 
-    val request = handleRequest(HttpMethod.Get, "/meal/2")
+    val request = handleRequest(HttpMethod.Get, "/meal/${validMeal.id}")
 
     // then
 
@@ -62,9 +62,13 @@ class MealTests :
   @Test
   fun whenDeleteMeal_thenValidMealIsDeleted(): Unit = withTestApplication({ main() }) {
 
+    // given
+
+    val validMeal = runBlocking { get<MealRepository>().meals.first() }
+
     // when
 
-    val request = handleRequest(HttpMethod.Delete, "/meal/3")
+    val request = handleRequest(HttpMethod.Delete, "/meal/${validMeal.id}")
 
     // then
 
@@ -77,6 +81,7 @@ class MealTests :
     // given
 
     val newMeal = Meal(
+      id = "id",
       title = "title",
       description = "description",
       image = "http://127.0.0.1:8081/static/image",
@@ -94,7 +99,7 @@ class MealTests :
 
     assertEquals(HttpStatusCode.Created, request.response.status())
 
-    val createdMeal = runBlocking { get<MealRepository>().get(request.response.content!!.toInt()) }
+    val createdMeal = runBlocking { get<MealRepository>().get(request.response.content!!) }
 
     assertEquals(newMeal, createdMeal)
   }
