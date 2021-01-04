@@ -10,11 +10,11 @@ import org.joda.time.DateTime
 interface MealRepository {
   val meals: List<Meal>
 
-  suspend fun add(meal: Meal): Int
+  suspend fun add(meal: Meal): String
 
-  suspend fun delete(id: Int)
+  suspend fun delete(id: String)
 
-  suspend fun get(id: Int): Meal
+  suspend fun get(id: String): Meal
 }
 
 class MealRepositoryImpl(
@@ -30,9 +30,9 @@ class MealRepositoryImpl(
         .map(::mapFromEntity)
     }
 
-  override suspend fun add(meal: Meal): Int = transaction {
+  override suspend fun add(meal: Meal): String = transaction {
     mealDAO
-      .new {
+      .new(meal.id) {
         title = meal.title
         description = meal.description
         imageUri = meal.image
@@ -41,11 +41,11 @@ class MealRepositoryImpl(
       .id.value
   }
 
-  override suspend fun delete(id: Int): Unit = transaction {
+  override suspend fun delete(id: String): Unit = transaction {
     mealDAO[id].delete()
   }
 
-  override suspend fun get(id: Int): Meal = transaction {
+  override suspend fun get(id: String): Meal = transaction {
     val entity = mealDAO[id]
 
     mapFromEntity(entity)
