@@ -2,15 +2,17 @@ package io.krugosvet.dailydish.repository
 
 import io.krugosvet.dailydish.repository.db.entity.MealDAO
 import io.krugosvet.dailydish.repository.db.entity.MealEntity
-import io.krugosvet.dailydish.repository.dto.Meal
+import io.krugosvet.dailydish.repository.dto.AddMeal
+import io.krugosvet.dailydish.repository.dto. Meal
 import io.krugosvet.dailydish.repository.dto.MealFactory
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import java.util.*
 
 interface MealRepository {
   val meals: List<Meal>
 
-  suspend fun add(meal: Meal): String
+  suspend fun add(meal: AddMeal): String
 
   suspend fun delete(id: String)
 
@@ -30,9 +32,11 @@ class MealRepositoryImpl(
         .map(::mapFromEntity)
     }
 
-  override suspend fun add(meal: Meal): String = transaction {
+  override suspend fun add(meal: AddMeal): String = transaction {
+    val newId = UUID.randomUUID().toString()
+
     mealDAO
-      .new(meal.id) {
+      .new(newId) {
         title = meal.title
         description = meal.description
         imageUri = meal.image
