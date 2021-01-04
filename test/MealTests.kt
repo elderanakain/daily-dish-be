@@ -1,6 +1,8 @@
+
 import io.krugosvet.dailydish.main
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
+import io.krugosvet.dailydish.repository.dto.AddMeal
 import io.krugosvet.dailydish.repository.dto.Meal
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -80,19 +82,18 @@ class MealTests :
 
     // given
 
-    val newMeal = Meal(
-      id = "id",
-      title = "title",
-      description = "description",
-      image = "http://127.0.0.1:8081/static/image",
-      lastCookingDate = "2020-01-01"
-    )
+    val mockTitle = "title"
+    val mockDescription = "description"
+    val mockImage = "http://127.0.0.1:8081/static/image"
+    val mockLastCookingDate = "2020-01-01"
+
+    val addMeal = AddMeal(mockTitle, mockDescription, mockImage, mockLastCookingDate)
 
     // when
 
     val request = handleRequest(HttpMethod.Post, "/meal") {
       addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-      setBody(Json.encodeToString(newMeal))
+      setBody(Json.encodeToString(addMeal))
     }
 
     // then
@@ -101,7 +102,9 @@ class MealTests :
 
     val createdMeal = runBlocking { get<MealRepository>().get(request.response.content!!) }
 
-    assertEquals(newMeal, createdMeal)
+    val validMeal = Meal(createdMeal.id, mockTitle, mockDescription, mockImage, mockLastCookingDate)
+
+    assertEquals(validMeal, createdMeal)
   }
 
   @After
