@@ -1,16 +1,35 @@
+@file:Suppress("RemoveRedundantQualifierName")
+
 package io.krugosvet.dailydish.repository.dto
 
 import io.krugosvet.dailydish.repository.db.entity.MealEntity
 import kotlinx.serialization.Serializable
 
+interface IMeal {
+  val title: String
+  val description: String
+  val image: String
+  val lastCookingDate: String
+}
+
 @Serializable
 data class Meal(
   val id: String,
-  val title: String,
-  val description: String,
-  val image: String,
-  val lastCookingDate: String
-)
+  override val title: String,
+  override val description: String,
+  override val image: String,
+  override val lastCookingDate: String,
+) :
+  IMeal
+
+@Serializable
+data class AddMeal(
+  override val title: String,
+  override val description: String,
+  override val image: String,
+  override val lastCookingDate: String
+) :
+  IMeal
 
 class MealFactory {
 

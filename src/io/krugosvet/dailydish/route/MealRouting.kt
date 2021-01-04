@@ -1,7 +1,7 @@
 package io.krugosvet.dailydish.route
 
 import io.krugosvet.dailydish.repository.MealRepository
-import io.krugosvet.dailydish.repository.dto.Meal
+import io.krugosvet.dailydish.repository.dto.AddMeal
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.Accepted
@@ -37,7 +37,7 @@ fun Route.mealRouting() {
 
     post {
       withContext(dispatchers.IO) {
-        val meal = call.receive<Meal>()
+        val meal = call.receive<AddMeal>()
 
         runCatching { mealRepository.add(meal) }
           .onSuccess { id -> call.respond(Created, id) }
