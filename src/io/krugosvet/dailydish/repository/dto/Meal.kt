@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Meal(
+  val id: String,
   val title: String,
   val description: String,
   val image: String,
@@ -15,6 +16,7 @@ class MealFactory {
 
   fun from(entity: MealEntity) =
     Meal(
+      id = entity.id.toString(),
       title = entity.title,
       description = entity.description,
       image = entity.imageUri,
