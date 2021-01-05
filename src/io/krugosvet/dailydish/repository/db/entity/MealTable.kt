@@ -11,9 +11,9 @@ object MealTable :
 
   override val id = varchar("id", 100).entityId()
 
-  val title = varchar("title", 100)
-  val description = varchar("description", 100)
-  val imageUri = varchar("image_uri", 100)
+  val title = varchar("title", 1000)
+  val description = varchar("description", 1000)
+  val imageUri = varchar("image_uri", 1000)
 
   val lastCookingDate = date("last_cooking_date")
 }

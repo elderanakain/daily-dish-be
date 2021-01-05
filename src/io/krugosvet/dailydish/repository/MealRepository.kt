@@ -3,7 +3,7 @@ package io.krugosvet.dailydish.repository
 import io.krugosvet.dailydish.repository.db.entity.MealDAO
 import io.krugosvet.dailydish.repository.db.entity.MealEntity
 import io.krugosvet.dailydish.repository.dto.AddMeal
-import io.krugosvet.dailydish.repository.dto. Meal
+import io.krugosvet.dailydish.repository.dto.Meal
 import io.krugosvet.dailydish.repository.dto.MealFactory
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
@@ -17,6 +17,8 @@ interface MealRepository {
   suspend fun delete(id: String)
 
   suspend fun get(id: String): Meal
+
+  suspend fun update(meal: Meal)
 }
 
 class MealRepositoryImpl(
@@ -54,6 +56,17 @@ class MealRepositoryImpl(
 
     mapFromEntity(entity)
   }
+
+  override suspend fun update(meal: Meal): Unit = transaction {
+    mealDAO[meal.id]
+      .apply {
+        title = meal.title
+        description = meal.description
+        imageUri = meal.image
+        lastCookingDate = DateTime.parse(meal.lastCookingDate)
+      }
+      .refresh(flush = true)
+    }
 
   private fun mapFromEntity(entity: MealEntity) = mealFactory.from(entity)
 }
