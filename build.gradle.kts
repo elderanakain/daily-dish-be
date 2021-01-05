@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.krugosvet.dailydish"
-version = "0.2.2-SNAPSHOT"
+version = "0.2.3-SNAPSHOT"
 
 application {
   mainClassName = "io.ktor.server.netty.EngineMain"

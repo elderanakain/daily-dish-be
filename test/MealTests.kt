@@ -1,4 +1,3 @@
-
 import io.krugosvet.dailydish.main
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
@@ -13,10 +12,13 @@ import org.junit.After
 import org.junit.Test
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
+import org.koin.core.component.inject
 import kotlin.test.assertEquals
 
 class MealTests :
   KoinComponent {
+
+  private val mealRepository: MealRepository by inject()
 
   @Test
   fun whenRequestMeals_thenValidCollectionIsReturned(): Unit = withTestApplication({ main() }) {
@@ -36,7 +38,7 @@ class MealTests :
 
     // given
 
-    val validMeal = runBlocking { get<MealRepository>().meals.first() }
+    val validMeal = runBlocking { mealRepository.meals.first() }
 
     // when
 
@@ -66,7 +68,7 @@ class MealTests :
 
     // given
 
-    val validMeal = runBlocking { get<MealRepository>().meals.first() }
+    val validMeal = runBlocking { mealRepository.meals.first() }
 
     // when
 
@@ -100,11 +102,36 @@ class MealTests :
 
     assertEquals(HttpStatusCode.Created, request.response.status())
 
-    val createdMeal = runBlocking { get<MealRepository>().get(request.response.content!!) }
+    val createdMeal = runBlocking { mealRepository.get(request.response.content!!) }
 
     val validMeal = Meal(createdMeal.id, mockTitle, mockDescription, mockImage, mockLastCookingDate)
 
     assertEquals(validMeal, createdMeal)
+  }
+
+  @Test
+  fun whenUpdateMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
+
+    // given
+
+    val mockTitle = "newTitle"
+
+    val existingMeal = runBlocking { mealRepository.meals.first() }
+    val editedMeal = existingMeal.copy(title = mockTitle)
+
+    // when
+
+    val request = handleRequest(HttpMethod.Put, "/meal") {
+      addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+      setBody(Json.encodeToString(editedMeal))
+    }
+
+    // then
+
+    val savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+
+    assertEquals(HttpStatusCode.Accepted, request.response.status())
+    assertEquals(editedMeal, savedMeal)
   }
 
   @After
