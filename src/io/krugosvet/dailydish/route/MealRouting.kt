@@ -2,6 +2,7 @@ package io.krugosvet.dailydish.route
 
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.dto.AddMeal
+import io.krugosvet.dailydish.repository.dto.Meal
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.Accepted
@@ -27,7 +28,7 @@ fun Route.mealRouting() {
         .onFailure { call.respond(BadRequest) }
     }
 
-    get("/{id}") {
+    get("{id}") {
       val id = call.getIdFromParams() ?: return@get
 
       runCatching { mealRepository.get(id) }
@@ -51,6 +52,16 @@ fun Route.mealRouting() {
       runCatching { mealRepository.delete(id) }
         .onSuccess { call.respond(Accepted) }
         .onFailure { call.respond(BadRequest) }
+    }
+
+    put {
+      withContext(dispatchers.IO) {
+        val meal = call.receive<Meal>()
+
+        runCatching { mealRepository.update(meal) }
+          .onSuccess { call.respond(Accepted) }
+          .onFailure { call.respond(BadRequest) }
+      }
     }
   }
 }
