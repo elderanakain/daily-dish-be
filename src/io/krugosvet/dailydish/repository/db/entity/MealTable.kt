@@ -13,7 +13,7 @@ object MealTable :
 
   val title = varchar("title", 1000)
   val description = varchar("description", 1000)
-  val imageUri = varchar("image_uri", 1000)
+  val imageUri = varchar("image_uri", 1000).nullable()
 
   val lastCookingDate = date("last_cooking_date")
 }

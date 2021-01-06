@@ -40,8 +40,8 @@ class MealRepositoryImpl(
     mealDAO
       .new(newId) {
         title = meal.title
-        description = meal.description
         imageUri = meal.image
+        description = meal.description
         lastCookingDate = DateTime.parse(meal.lastCookingDate)
       }
       .id.value
