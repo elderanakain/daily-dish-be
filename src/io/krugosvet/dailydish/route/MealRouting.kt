@@ -15,14 +15,13 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.*
 import io.ktor.util.pipeline.*
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.inject
 import java.io.*
+import java.net.URI
 
 fun Route.mealRouting() {
   val mealRepository: MealRepository by inject()
@@ -47,7 +46,7 @@ fun Route.mealRouting() {
       withContext(dispatchers.IO) {
         runCatching {
           var meal: AddMeal? = null
-          var imageUri: String? = null
+          var imageUri: URI? = null
 
           call.receiveMultipart()
             .forEachPart { part ->
@@ -59,34 +58,20 @@ fun Route.mealRouting() {
                 }
                 is PartData.FileItem -> {
                   call.application.log.info("FileItem parsing")
-                  call.application.log.info("FileItem parsing ${application.environment.rootPath}")
 
-                  val ext = File(part.originalFileName).extension
-
-                  val file = File(application.environment.rootPath, "upload-${System.currentTimeMillis()}.$ext")
-                  file.createNewFile()
-                  part.streamProvider().use { input ->
-                    file.outputStream().buffered().use { output ->
-                      input.copyToSuspend(output)
-                    }
-                  }
-
-
-                  imageUri = file.path
-
-                  call.application.log.info("FileItem parsing ${file.path}")
+                  imageUri = mealRepository.saveImage(part.streamProvider(), part.contentType?.contentSubtype ?: "jpg")
                 }
               }
 
               part.dispose()
             }
 
-          mealRepository.add(meal!!.copy(image = imageUri))
+          mealRepository.add(meal!!.copy(image = imageUri.toString()))
         }
           .onSuccess { id -> call.respond(Created, id) }
           .onFailure {
-            it.printStackTrace()
-            throw it
+            call.application.log.error(it)
+            call.respond(BadRequest)
           }
       }
     }
@@ -110,28 +95,6 @@ fun Route.mealRouting() {
     }
   }
 }
-
-suspend fun InputStream.copyToSuspend(
-  out: OutputStream,
-  yieldSize: Int = 4 * 1024 * 1024,
-  dispatcher: CoroutineDispatcher = Dispatchers.IO
-): Long =
-  withContext(dispatcher) {
-    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-    var bytesCopied = 0L
-    var bytesAfterYield = 0L
-    while (true) {
-      val bytes = read(buffer).takeIf { it >= 0 } ?: break
-      out.write(buffer, 0, bytes)
-      if (bytesAfterYield >= yieldSize) {
-        yield()
-        bytesAfterYield %= yieldSize
-      }
-      bytesCopied += bytes
-      bytesAfterYield += bytes
-    }
-    return@withContext bytesCopied
-  }
 
 private suspend fun ApplicationCall.getIdFromParams(): String? {
   val id = parameters["id"]?.takeIf { it.isNotBlank() }

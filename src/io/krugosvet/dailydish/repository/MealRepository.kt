@@ -7,6 +7,8 @@ import io.krugosvet.dailydish.repository.dto.Meal
 import io.krugosvet.dailydish.repository.dto.MealFactory
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import java.io.InputStream
+import java.net.URI
 import java.util.*
 
 interface MealRepository {
@@ -19,11 +21,14 @@ interface MealRepository {
   suspend fun get(id: String): Meal
 
   suspend fun update(meal: Meal)
+
+  suspend fun saveImage(image: InputStream, extension: String): URI
 }
 
 class MealRepositoryImpl(
   private val mealDAO: MealDAO,
   private val mealFactory: MealFactory,
+  private val imageRepository: ImageRepository,
 ) :
   MealRepository {
 
@@ -48,7 +53,11 @@ class MealRepositoryImpl(
   }
 
   override suspend fun delete(id: String): Unit = transaction {
-    mealDAO[id].delete()
+    val meal = mealDAO[id]
+
+    imageRepository.delete(meal.imageUri)
+
+    meal.delete()
   }
 
   override suspend fun get(id: String): Meal = transaction {
@@ -66,7 +75,10 @@ class MealRepositoryImpl(
         lastCookingDate = DateTime.parse(meal.lastCookingDate)
       }
       .refresh(flush = true)
-    }
+  }
+
+  override suspend fun saveImage(image: InputStream, extension: String): URI =
+    imageRepository.save(image, extension)
 
   private fun mapFromEntity(entity: MealEntity) = mealFactory.from(entity)
 }

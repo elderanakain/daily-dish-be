@@ -1,5 +1,6 @@
 package io.krugosvet.dailydish.repository.injection
 
+import io.krugosvet.dailydish.repository.ImageRepository
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.MealRepositoryImpl
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
@@ -21,7 +22,11 @@ val repositoryModule = module {
     MealDAO()
   }
 
+  single {
+    ImageRepository(get())
+  }
+
   single<MealRepository> {
-    MealRepositoryImpl(get(), get())
+    MealRepositoryImpl(get(), get(), get())
   }
 }

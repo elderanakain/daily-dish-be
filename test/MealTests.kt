@@ -1,19 +1,26 @@
+
 import io.krugosvet.dailydish.main
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
 import io.krugosvet.dailydish.repository.dto.AddMeal
-import io.krugosvet.dailydish.repository.dto.Meal
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import io.ktor.utils.io.core.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.`is`
+import org.hamcrest.Matchers.matchesPattern
 import org.junit.After
 import org.junit.Test
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.component.inject
+import java.io.File
 import kotlin.test.assertEquals
+
 
 class MealTests :
   KoinComponent {
@@ -80,33 +87,62 @@ class MealTests :
   }
 
   @Test
-  fun whenAddMeal_thenValidMealIsAdded(): Unit = withTestApplication({ main() }) {
+  fun whenAddMealWithNewImage_thenValidMealIsAdded(): Unit = withTestApplication({ main() }) {
 
     // given
 
+    val mockBoundaryHeaderValue = "boundary"
+
     val mockTitle = "title"
     val mockDescription = "description"
-    val mockImage = "http://127.0.0.1:8081/static/image"
     val mockLastCookingDate = "2020-01-01"
 
-    val addMeal = AddMeal(mockTitle, mockDescription, mockImage, mockLastCookingDate)
+    val addMeal = AddMeal(mockTitle, mockDescription, mockLastCookingDate, image = null)
+
+    val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
+
+    val formData = formData {
+      append("meal", Json.encodeToString(addMeal))
+      append("meal_image", "", ContentType.Image.PNG, mockImage.length()) {
+        writeFully(mockImage.readBytes())
+      }
+    }
 
     // when
 
-    val request = handleRequest(HttpMethod.Post, "/meal") {
-      addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-      setBody(Json.encodeToString(addMeal))
+    val createMealRequest = handleRequest(HttpMethod.Post, "/meal") {
+      addHeader(HttpHeaders.ContentType, "${ContentType.MultiPart.FormData}; boundary=$mockBoundaryHeaderValue")
+
+      setBody(mockBoundaryHeaderValue, formData)
     }
 
     // then
 
-    assertEquals(HttpStatusCode.Created, request.response.status())
+    assertEquals(HttpStatusCode.Created, createMealRequest.response.status())
 
-    val createdMeal = runBlocking { mealRepository.get(request.response.content!!) }
+    val createdMeal = runBlocking { mealRepository.get(createMealRequest.response.content!!) }
 
-    val validMeal = Meal(createdMeal.id, mockTitle, mockDescription, mockImage, mockLastCookingDate)
+    assertThat(createdMeal.title, `is`(mockTitle))
+    assertThat(createdMeal.description, `is`(mockDescription))
+    assertThat(createdMeal.image, matchesPattern("https://daily-dish-be.com.herokuapp.com/static/.*".toPattern()))
+    assertThat(createdMeal.lastCookingDate, `is`(mockLastCookingDate))
 
-    assertEquals(validMeal, createdMeal)
+    // when
+
+    val mealImageId = "/".toPattern().split(createdMeal.image).last()
+
+    val getImageRequest = handleRequest(HttpMethod.Get, "/static/$mealImageId")
+
+    // then
+
+    assertThat(getImageRequest.response.status(), `is`(HttpStatusCode.OK))
+
+    // when
+
+    val deleteRequest = handleRequest(HttpMethod.Delete, "/meal/${createdMeal.id}")
+
+    assertThat(deleteRequest.response.status(), `is`(HttpStatusCode.Accepted))
+    assertThat(File("resources/static/$mealImageId").exists(), `is`(false))
   }
 
   @Test

@@ -37,7 +37,7 @@ fun Application.main() {
 
   routing {
     static("/static") {
-      resources("static")
+      files("resources/static")
     }
     mealRouting()
   }

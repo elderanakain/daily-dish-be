@@ -43,6 +43,9 @@ dependencies {
   implementation("org.postgresql:postgresql:42.2.2")
 
   implementation("org.koin:koin-ktor:2.2.1")
+
+  testImplementation("org.mockito:mockito-inline:3.4.4")
+  testImplementation("org.hamcrest:hamcrest:2.2")
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")
