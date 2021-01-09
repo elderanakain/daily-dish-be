@@ -21,11 +21,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.inject
 import java.io.*
-import java.net.URI
 
 fun Route.mealRouting() {
   val mealRepository: MealRepository by inject()
-  val dispatchers: Dispatchers by inject()
 
   route("meal") {
     get {
@@ -43,10 +41,10 @@ fun Route.mealRouting() {
     }
 
     post {
-      withContext(dispatchers.IO) {
+      withContext(Dispatchers.IO) {
         runCatching {
           var meal: AddMeal? = null
-          var imageUri: URI? = null
+          var imageUri: String? = null
 
           call.receiveMultipart()
             .forEachPart { part ->
@@ -59,7 +57,9 @@ fun Route.mealRouting() {
                 is PartData.FileItem -> {
                   call.application.log.info("FileItem parsing")
 
-                  imageUri = mealRepository.saveImage(part.streamProvider(), part.contentType?.contentSubtype ?: "jpg")
+                  val imageExtension = part.contentType?.contentSubtype ?: ContentType.Image.JPEG.toString()
+
+                  imageUri = mealRepository.saveImage(part.streamProvider(), imageExtension)
                 }
               }
 
@@ -85,7 +85,7 @@ fun Route.mealRouting() {
     }
 
     put {
-      withContext(dispatchers.IO) {
+      withContext(Dispatchers.IO) {
         val meal = call.receive<Meal>()
 
         runCatching { mealRepository.update(meal) }
