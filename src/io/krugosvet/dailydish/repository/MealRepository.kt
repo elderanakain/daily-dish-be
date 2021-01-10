@@ -66,7 +66,13 @@ class MealRepositoryImpl(
   }
 
   override suspend fun update(meal: Meal): Unit = transaction {
-    mealDAO[meal.id]
+    val mealDao = mealDAO[meal.id]
+
+    if (meal.image == null) {
+      imageRepository.delete(mealDao.imageUri)
+    }
+
+    mealDao
       .apply {
         title = meal.title
         description = meal.description

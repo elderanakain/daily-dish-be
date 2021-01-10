@@ -3,6 +3,7 @@ import io.krugosvet.dailydish.main
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.db.DatabaseHelper
 import io.krugosvet.dailydish.repository.dto.AddMeal
+import io.krugosvet.dailydish.repository.dto.Meal
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -16,16 +17,18 @@ import org.hamcrest.Matchers.matchesPattern
 import org.junit.After
 import org.junit.Test
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
 import org.koin.core.component.inject
 import java.io.File
 import kotlin.test.assertEquals
 
+private const val MOCK_BOUNDARY = "boundary"
+private val MOCK_MULTIPART_HEADER = "${ContentType.MultiPart.FormData}; boundary=$MOCK_BOUNDARY"
 
 class MealTests :
   KoinComponent {
 
   private val mealRepository: MealRepository by inject()
+  private val databaseHelper: DatabaseHelper by inject()
 
   @Test
   fun whenRequestMeals_thenValidCollectionIsReturned(): Unit = withTestApplication({ main() }) {
@@ -91,8 +94,6 @@ class MealTests :
 
     // given
 
-    val mockBoundaryHeaderValue = "boundary"
-
     val mockTitle = "title"
     val mockDescription = "description"
     val mockLastCookingDate = "2020-01-01"
@@ -111,9 +112,9 @@ class MealTests :
     // when
 
     val createMealRequest = handleRequest(HttpMethod.Post, "/meal") {
-      addHeader(HttpHeaders.ContentType, "${ContentType.MultiPart.FormData}; boundary=$mockBoundaryHeaderValue")
+      addHeader(HttpHeaders.ContentType, MOCK_MULTIPART_HEADER)
 
-      setBody(mockBoundaryHeaderValue, formData)
+      setBody(MOCK_BOUNDARY, formData)
     }
 
     // then
@@ -137,12 +138,44 @@ class MealTests :
 
     assertThat(getImageRequest.response.status(), `is`(HttpStatusCode.OK))
 
+    deleteMeal(createdMeal)
+  }
+
+  @Test
+  fun whenUpdateWithImageMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
+
+    // given
+
+    val mockTitle = "newTitle"
+
+    val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
+
+    val existingMeal = runBlocking { mealRepository.meals.first() }
+    val editedMeal = existingMeal.copy(title = mockTitle)
+
+    val formData = formData {
+      append("meal", Json.encodeToString(editedMeal))
+      append("meal_image", "", ContentType.Image.PNG, mockImage.length()) {
+        writeFully(mockImage.readBytes())
+      }
+    }
+
     // when
 
-    val deleteRequest = handleRequest(HttpMethod.Delete, "/meal/${createdMeal.id}")
+    val request = handleRequest(HttpMethod.Put, "/meal") {
+      addHeader(HttpHeaders.ContentType, MOCK_MULTIPART_HEADER)
 
-    assertThat(deleteRequest.response.status(), `is`(HttpStatusCode.Accepted))
-    assertThat(File("resources/static/$mealImageId").exists(), `is`(false))
+      setBody(MOCK_BOUNDARY, formData)
+    }
+
+    // then
+
+    val savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+
+    assertEquals(HttpStatusCode.Accepted, request.response.status())
+    assertEquals(editedMeal.copy(image = savedMeal.image), savedMeal)
+
+    deleteMeal(savedMeal)
   }
 
   @Test
@@ -155,11 +188,16 @@ class MealTests :
     val existingMeal = runBlocking { mealRepository.meals.first() }
     val editedMeal = existingMeal.copy(title = mockTitle)
 
+    val formData = formData {
+      append("meal", Json.encodeToString(editedMeal))
+    }
+
     // when
 
     val request = handleRequest(HttpMethod.Put, "/meal") {
-      addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-      setBody(Json.encodeToString(editedMeal))
+      addHeader(HttpHeaders.ContentType, MOCK_MULTIPART_HEADER)
+
+      setBody(MOCK_BOUNDARY, formData)
     }
 
     // then
@@ -170,8 +208,83 @@ class MealTests :
     assertEquals(editedMeal, savedMeal)
   }
 
+  @Test
+  fun whenUpdateWithDeletedImageMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
+
+    // given
+
+    val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
+
+    var existingMeal = runBlocking { mealRepository.meals.first() }
+
+    var formData = formData {
+      append("meal", Json.encodeToString(existingMeal))
+      append("meal_image", "", ContentType.Image.PNG, mockImage.length()) {
+        writeFully(mockImage.readBytes())
+      }
+    }
+
+    // when
+
+    var request = handleRequest(HttpMethod.Put, "/meal") {
+      addHeader(HttpHeaders.ContentType, MOCK_MULTIPART_HEADER)
+
+      setBody(MOCK_BOUNDARY, formData)
+    }
+
+    // then
+
+    var savedMeal = runBlocking { mealRepository.get(existingMeal.id) }
+
+    assertEquals(HttpStatusCode.Accepted, request.response.status())
+    assertEquals(existingMeal.copy(image = savedMeal.image), savedMeal)
+
+    // given
+
+    val editedMeal = savedMeal.copy(image = null)
+
+    formData = formData {
+      append("meal", Json.encodeToString(editedMeal))
+    }
+
+    // when
+
+    request = handleRequest(HttpMethod.Put, "/meal") {
+      addHeader(HttpHeaders.ContentType, MOCK_MULTIPART_HEADER)
+
+      setBody(MOCK_BOUNDARY, formData)
+    }
+
+    // then
+
+    savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+
+    assertEquals(HttpStatusCode.Accepted, request.response.status())
+    assertEquals(editedMeal, savedMeal)
+
+    assertThat(getImageFile(existingMeal).exists(), `is`(false))
+  }
+
   @After
   fun tearDown() = withTestApplication({ main() }) {
-    get<DatabaseHelper>().reset()
+    databaseHelper.reset()
+  }
+
+  private fun TestApplicationEngine.deleteMeal(meal: Meal) {
+
+    // when
+
+    val deleteRequest = handleRequest(HttpMethod.Delete, "/meal/${meal.id}")
+
+    // then
+
+    assertThat(deleteRequest.response.status(), `is`(HttpStatusCode.Accepted))
+    assertThat(getImageFile(meal).exists(), `is`(false))
+  }
+
+  private fun getImageFile(meal: Meal): File {
+    val mealImageId = "/".toPattern().split(meal.image).last()
+
+    return File("resources/static/$mealImageId")
   }
 }

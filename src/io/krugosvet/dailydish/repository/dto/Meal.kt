@@ -10,6 +10,8 @@ interface IMeal {
   val description: String
   val image: String?
   val lastCookingDate: String
+
+  fun updateImage(image: String?): IMeal
 }
 
 @Serializable
@@ -20,7 +22,10 @@ data class Meal(
   override val image: String?,
   override val lastCookingDate: String,
 ) :
-  IMeal
+  IMeal {
+
+  override fun updateImage(image: String?): Meal = copy(image = image)
+}
 
 @Serializable
 data class AddMeal(
@@ -29,7 +34,10 @@ data class AddMeal(
   override val lastCookingDate: String,
   override val image: String?
 ) :
-  IMeal
+  IMeal {
+
+  override fun updateImage(image: String?): AddMeal = copy(image = image)
+}
 
 class MealFactory {
 
