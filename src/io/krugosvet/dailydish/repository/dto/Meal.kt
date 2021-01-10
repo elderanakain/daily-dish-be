@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 interface IMeal {
   val title: String
   val description: String
-  val image: String
+  val image: String?
   val lastCookingDate: String
 }
 
@@ -17,7 +17,7 @@ data class Meal(
   val id: String,
   override val title: String,
   override val description: String,
-  override val image: String,
+  override val image: String?,
   override val lastCookingDate: String,
 ) :
   IMeal
@@ -26,8 +26,8 @@ data class Meal(
 data class AddMeal(
   override val title: String,
   override val description: String,
-  override val image: String,
-  override val lastCookingDate: String
+  override val lastCookingDate: String,
+  override val image: String?
 ) :
   IMeal
 

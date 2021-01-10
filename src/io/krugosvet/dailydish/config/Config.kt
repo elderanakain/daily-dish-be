@@ -1,5 +1,3 @@
-@file:Suppress("EXPERIMENTAL_API_USAGE")
-
 package io.krugosvet.dailydish.config
 
 import io.ktor.config.*
@@ -18,6 +16,10 @@ class Config(
 
   val dbPassword: String by lazy {
     appConfig.property("ktor.deployment.db_password").getString()
+  }
+
+  val hostUrl: String by lazy {
+    "https://${appConfig.property("ktor.deployment.app_name").getString()}.herokuapp.com/"
   }
 
 }
