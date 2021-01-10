@@ -2,6 +2,7 @@ package io.krugosvet.dailydish.route
 
 import io.krugosvet.dailydish.repository.MealRepository
 import io.krugosvet.dailydish.repository.dto.AddMeal
+import io.krugosvet.dailydish.repository.dto.IMeal
 import io.krugosvet.dailydish.repository.dto.Meal
 import io.ktor.application.*
 import io.ktor.http.*
@@ -40,7 +41,8 @@ fun Route.mealRouting() {
         .onFailure { call.respond(BadRequest) }
     }
 
-    createMealRoute()
+    createMealRoute(mealRepository)
+    updateMealRoute(mealRepository)
 
     delete("{id}") {
       val id = call.getIdFromParams() ?: return@delete
@@ -49,57 +51,26 @@ fun Route.mealRouting() {
         .onSuccess { call.respond(Accepted) }
         .onFailure { call.respond(BadRequest) }
     }
-
-    put {
-      withContext(Dispatchers.IO) {
-        val meal = call.receive<Meal>()
-
-        runCatching { mealRepository.update(meal) }
-          .onSuccess { call.respond(Accepted) }
-          .onFailure { call.respond(BadRequest) }
-      }
-    }
   }
 }
 
-private fun Route.createMealRoute() {
-  val mealRepository: MealRepository by inject()
+private fun Route.createMealRoute(mealRepository: MealRepository) = post {
+  withContext(Dispatchers.IO) {
+    val addMeal: AddMeal = receiveMealMultipart(mealRepository)
 
-  post {
-    withContext(Dispatchers.IO) {
-      runCatching {
-        var meal: AddMeal? = null
-        var imageUri: String? = null
+    runCatching { mealRepository.add(addMeal) }
+      .onSuccess { id -> call.respond(Created, id) }
+      .onFailure { call.respond(BadRequest) }
+  }
+}
 
-        call.receiveMultipart()
-          .forEachPart { part ->
-            when (part) {
-              is PartData.FormItem -> {
-                meal = Json.decodeFromString(part.value)
-              }
-              is PartData.FileItem -> {
-                val imageExtension = part.contentType?.contentSubtype ?: ContentType.Image.JPEG.toString()
+private fun Route.updateMealRoute(mealRepository: MealRepository) = put {
+  withContext(Dispatchers.IO) {
+    val meal: Meal = receiveMealMultipart(mealRepository)
 
-                imageUri = mealRepository.saveImage(part.streamProvider(), imageExtension)
-              }
-              is PartData.BinaryItem -> return@forEachPart
-            }
-
-            part.dispose()
-          }
-
-        mealRepository.add(
-          meal!!.copy(image = imageUri)
-        )
-      }
-        .onSuccess { id ->
-          call.respond(Created, id)
-        }
-        .onFailure {
-          call.application.log.error(it)
-          call.respond(BadRequest)
-        }
-    }
+    runCatching { mealRepository.update(meal) }
+      .onSuccess { call.respond(Accepted) }
+      .onFailure { call.respond(BadRequest) }
   }
 }
 
@@ -112,4 +83,35 @@ private suspend fun ApplicationCall.getIdFromParams(): String? {
   }
 
   return id
+}
+
+private suspend inline fun <reified T : IMeal> PipelineContext<*, ApplicationCall>.receiveMealMultipart(
+  mealRepository: MealRepository
+): T {
+
+  var meal: T? = null
+  var imageUri: String? = null
+
+  call.receiveMultipart()
+    .forEachPart { part ->
+      when (part) {
+        is PartData.FormItem -> {
+          meal = Json.decodeFromString(part.value)
+        }
+        is PartData.FileItem -> {
+          val imageExtension = part.contentType?.contentSubtype ?: ContentType.Image.JPEG.toString()
+
+          imageUri = mealRepository.saveImage(part.streamProvider(), imageExtension)
+        }
+        is PartData.BinaryItem -> return@forEachPart
+      }
+
+      part.dispose()
+    }
+
+  if (imageUri == null) {
+    imageUri = meal?.image
+  }
+
+  return meal!!.updateImage(image = imageUri) as T
 }
