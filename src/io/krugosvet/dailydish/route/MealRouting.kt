@@ -40,41 +40,7 @@ fun Route.mealRouting() {
         .onFailure { call.respond(BadRequest) }
     }
 
-    post {
-      withContext(Dispatchers.IO) {
-        runCatching {
-          var meal: AddMeal? = null
-          var imageUri: String? = null
-
-          call.receiveMultipart()
-            .forEachPart { part ->
-              when (part) {
-                is PartData.FormItem -> {
-                  call.application.log.info("Form parsing ${part.value}")
-
-                  meal = Json.decodeFromString(part.value)
-                }
-                is PartData.FileItem -> {
-                  call.application.log.info("FileItem parsing")
-
-                  val imageExtension = part.contentType?.contentSubtype ?: ContentType.Image.JPEG.toString()
-
-                  imageUri = mealRepository.saveImage(part.streamProvider(), imageExtension)
-                }
-              }
-
-              part.dispose()
-            }
-
-          mealRepository.add(meal!!.copy(image = imageUri.toString()))
-        }
-          .onSuccess { id -> call.respond(Created, id) }
-          .onFailure {
-            call.application.log.error(it)
-            call.respond(BadRequest)
-          }
-      }
-    }
+    createMealRoute()
 
     delete("{id}") {
       val id = call.getIdFromParams() ?: return@delete
@@ -92,6 +58,47 @@ fun Route.mealRouting() {
           .onSuccess { call.respond(Accepted) }
           .onFailure { call.respond(BadRequest) }
       }
+    }
+  }
+}
+
+private fun Route.createMealRoute() {
+  val mealRepository: MealRepository by inject()
+
+  post {
+    withContext(Dispatchers.IO) {
+      runCatching {
+        var meal: AddMeal? = null
+        var imageUri: String? = null
+
+        call.receiveMultipart()
+          .forEachPart { part ->
+            when (part) {
+              is PartData.FormItem -> {
+                meal = Json.decodeFromString(part.value)
+              }
+              is PartData.FileItem -> {
+                val imageExtension = part.contentType?.contentSubtype ?: ContentType.Image.JPEG.toString()
+
+                imageUri = mealRepository.saveImage(part.streamProvider(), imageExtension)
+              }
+              is PartData.BinaryItem -> return@forEachPart
+            }
+
+            part.dispose()
+          }
+
+        mealRepository.add(
+          meal!!.copy(image = imageUri)
+        )
+      }
+        .onSuccess { id ->
+          call.respond(Created, id)
+        }
+        .onFailure {
+          call.application.log.error(it)
+          call.respond(BadRequest)
+        }
     }
   }
 }
