@@ -1,8 +1,6 @@
 package io.krugosvet.dailydish
 
-import io.krugosvet.dailydish.injection.configModule
-import io.krugosvet.dailydish.repository.db.DatabaseHelper
-import io.krugosvet.dailydish.repository.injection.repositoryModule
+import io.krugosvet.dailydish.common.core.commonModules
 import io.krugosvet.dailydish.route.mealRouting
 import io.ktor.application.*
 import io.ktor.features.*
@@ -10,7 +8,6 @@ import io.ktor.http.content.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import org.koin.ktor.ext.Koin
-import org.koin.ktor.ext.get
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -20,7 +17,7 @@ fun Application.main() {
   install(CallLogging)
 
   install(Koin) {
-    modules(repositoryModule, configModule)
+    modules(commonModules)
   }
 
   install(ContentNegotiation) {
@@ -33,11 +30,9 @@ fun Application.main() {
     }
   }
 
-  get<DatabaseHelper>().connect()
-
   routing {
     static("/static") {
-      files("resources/static")
+      files("src/main/resources/static")
     }
     mealRouting()
   }
