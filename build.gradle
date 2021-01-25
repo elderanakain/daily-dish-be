@@ -1,0 +1,99 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21"
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.4.21'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.21'
+    id 'maven'
+}
+
+group = 'io.krugosvet.dailydish'
+version = '0.2.3'
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'application'
+
+application {
+    mainClassName = 'io.ktor.server.netty.EngineMain'
+
+    sourceSets {
+        main.kotlin.srcDirs = ['src/main/kotlin']
+        main.resources.srcDirs = ['src/main/resources']
+
+        test.kotlin.srcDirs = ['src/test/kotlin']
+        test.resources.srcDirs = ['src/test/resources']
+
+    }
+}
+
+compileKotlin {
+    kotlinOptions.freeCompilerArgs = ["-Xallow-result-return-type"]
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+    maven { url = uri('https://kotlin.bintray.com/ktor') }
+    maven { url = "https://kotlin.bintray.com/kotlinx/" }
+    maven { url = "https://dl.bintray.com/ekito/koin" }
+    maven {
+        url = "https://maven.pkg.github.com/elderanakain/daily-dish-common"
+        credentials {
+            username = System.getenv("GITHUB_PUBLISH_USERNAME")
+            password = System.getenv("GITHUB_PUBLISH_TOKEN")
+        }
+    }
+}
+
+dependencies {
+
+    def kotlin_version = "1.4.21"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    // Ktor
+
+    def ktor_version = "1.5.0"
+    def logback_version = "1.2.1"
+
+    implementation('org.koin:koin-ktor:3.0.0-alpha-4')
+    implementation("io.ktor:ktor-server-netty:$ktor_version")
+    implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-serialization:$ktor_version")
+    testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+
+    implementation("org.postgresql:postgresql:42.2.2")
+
+    // Common
+
+    implementation('org.jetbrains.kotlinx:kotlinx-datetime:0.1.1')
+    implementation('io.krugosvet.dailydish:common-jvm:1.0.8')
+
+    // Testing
+
+    testImplementation('org.mockito:mockito-inline:3.4.4')
+    testImplementation('org.hamcrest:hamcrest:2.2')
+}
+
+tasks.create("stage") {
+    dependsOn("installDist")
+}
+
+tasks {
+    test {
+        testLogging {
+            showStandardStreams = true
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
+}

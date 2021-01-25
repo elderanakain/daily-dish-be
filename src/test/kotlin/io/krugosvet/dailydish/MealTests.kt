@@ -1,23 +1,22 @@
+package io.krugosvet.dailydish
 
-import io.krugosvet.dailydish.main
-import io.krugosvet.dailydish.repository.MealRepository
-import io.krugosvet.dailydish.repository.db.DatabaseHelper
-import io.krugosvet.dailydish.repository.dto.AddMeal
-import io.krugosvet.dailydish.repository.dto.Meal
+import io.krugosvet.dailydish.common.dto.AddMeal
+import io.krugosvet.dailydish.common.dto.Meal
+import io.krugosvet.dailydish.common.repository.MealRepository
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.hamcrest.Matchers.matchesPattern
-import org.junit.After
 import org.junit.Test
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.core.KoinComponent
+import org.koin.core.inject
 import java.io.File
 import kotlin.test.assertEquals
 
@@ -28,10 +27,24 @@ class MealTests :
   KoinComponent {
 
   private val mealRepository: MealRepository by inject()
-  private val databaseHelper: DatabaseHelper by inject()
 
   @Test
-  fun whenRequestMeals_thenValidCollectionIsReturned(): Unit = withTestApplication({ main() }) {
+  fun runTests(): Unit = withTestApplication({ main() }) {
+    runBlocking {
+      testWithReset(
+        whenRequestMeals_thenValidCollectionIsReturned(),
+        whenRequestMeal_thenValidMealIsReturned(),
+        whenRequestMeal_thenIdIsNotFound(),
+        whenDeleteMeal_thenValidMealIsDeleted(),
+        whenAddMealWithNewImage_thenValidMealIsAdded(),
+        whenUpdateWithImageMeal_thenChangesArePropagated(),
+        whenUpdateMeal_thenChangesArePropagated(),
+        whenUpdateWithDeletedImageMeal_thenChangesArePropagated(),
+      )
+    }
+  }
+
+  private fun TestApplicationEngine.whenRequestMeals_thenValidCollectionIsReturned(): suspend () -> Unit = {
 
     // when
 
@@ -43,12 +56,11 @@ class MealTests :
     assertEquals(HttpStatusCode.OK, request.response.status())
   }
 
-  @Test
-  fun whenRequestMeal_thenValidMealIsReturned(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenRequestMeal_thenValidMealIsReturned(): suspend () -> Unit = {
 
     // given
 
-    val validMeal = runBlocking { mealRepository.meals.first() }
+    val validMeal = mealRepository.meals.first()
 
     // when
 
@@ -60,8 +72,7 @@ class MealTests :
     assertEquals(HttpStatusCode.OK, request.response.status())
   }
 
-  @Test
-  fun whenRequestMeal_thenIdIsNotFound(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenRequestMeal_thenIdIsNotFound(): suspend () -> Unit = {
 
     // when
 
@@ -73,12 +84,11 @@ class MealTests :
     assertEquals(HttpStatusCode.BadRequest, request.response.status())
   }
 
-  @Test
-  fun whenDeleteMeal_thenValidMealIsDeleted(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenDeleteMeal_thenValidMealIsDeleted(): suspend () -> Unit = {
 
     // given
 
-    val validMeal = runBlocking { mealRepository.meals.first() }
+    val validMeal = mealRepository.meals.first()
 
     // when
 
@@ -89,16 +99,15 @@ class MealTests :
     assertEquals(HttpStatusCode.Accepted, request.response.status())
   }
 
-  @Test
-  fun whenAddMealWithNewImage_thenValidMealIsAdded(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenAddMealWithNewImage_thenValidMealIsAdded(): suspend () -> Unit = {
 
     // given
 
     val mockTitle = "title"
     val mockDescription = "description"
-    val mockLastCookingDate = "2020-01-01"
+    val mockLastCookingDate = LocalDate.parse("2020-01-01")
 
-    val addMeal = AddMeal(mockTitle, mockDescription, mockLastCookingDate, image = null)
+    val addMeal = AddMeal(mockTitle, mockDescription, image = null, mockLastCookingDate)
 
     val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
 
@@ -121,11 +130,11 @@ class MealTests :
 
     assertEquals(HttpStatusCode.Created, createMealRequest.response.status())
 
-    val createdMeal = runBlocking { mealRepository.get(createMealRequest.response.content!!) }
+    val createdMeal = mealRepository.get(createMealRequest.response.content!!)
 
     assertThat(createdMeal.title, `is`(mockTitle))
     assertThat(createdMeal.description, `is`(mockDescription))
-    assertThat(createdMeal.image, matchesPattern("https://daily-dish-be.com.herokuapp.com/static/.*".toPattern()))
+    assertThat(createdMeal.image, matchesPattern("https://daily-dish-be-staging.herokuapp.com/static/.*".toPattern()))
     assertThat(createdMeal.lastCookingDate, `is`(mockLastCookingDate))
 
     // when
@@ -141,16 +150,14 @@ class MealTests :
     deleteMeal(createdMeal)
   }
 
-  @Test
-  fun whenUpdateWithImageMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
-
+  private fun TestApplicationEngine.whenUpdateWithImageMeal_thenChangesArePropagated(): suspend () -> Unit = {
     // given
 
     val mockTitle = "newTitle"
 
     val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
 
-    val existingMeal = runBlocking { mealRepository.meals.first() }
+    val existingMeal = mealRepository.meals.first()
     val editedMeal = existingMeal.copy(title = mockTitle)
 
     val formData = formData {
@@ -170,7 +177,7 @@ class MealTests :
 
     // then
 
-    val savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+    val savedMeal = mealRepository.get(editedMeal.id)
 
     assertEquals(HttpStatusCode.Accepted, request.response.status())
     assertEquals(editedMeal.copy(image = savedMeal.image), savedMeal)
@@ -178,8 +185,7 @@ class MealTests :
     deleteMeal(savedMeal)
   }
 
-  @Test
-  fun whenUpdateMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenUpdateMeal_thenChangesArePropagated(): suspend () -> Unit = {
 
     // given
 
@@ -202,20 +208,19 @@ class MealTests :
 
     // then
 
-    val savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+    val savedMeal = mealRepository.get(editedMeal.id)
 
     assertEquals(HttpStatusCode.Accepted, request.response.status())
     assertEquals(editedMeal, savedMeal)
   }
 
-  @Test
-  fun whenUpdateWithDeletedImageMeal_thenChangesArePropagated(): Unit = withTestApplication({ main() }) {
+  private fun TestApplicationEngine.whenUpdateWithDeletedImageMeal_thenChangesArePropagated(): suspend () -> Unit = {
 
     // given
 
     val mockImage = File(application.environment.classLoader.getResource("mock_image.jpg")!!.toURI())
 
-    var existingMeal = runBlocking { mealRepository.meals.first() }
+    val existingMeal = runBlocking { mealRepository.meals.first() }
 
     var formData = formData {
       append("meal", Json.encodeToString(existingMeal))
@@ -234,7 +239,7 @@ class MealTests :
 
     // then
 
-    var savedMeal = runBlocking { mealRepository.get(existingMeal.id) }
+    var savedMeal = mealRepository.get(existingMeal.id)
 
     assertEquals(HttpStatusCode.Accepted, request.response.status())
     assertEquals(existingMeal.copy(image = savedMeal.image), savedMeal)
@@ -257,7 +262,7 @@ class MealTests :
 
     // then
 
-    savedMeal = runBlocking { mealRepository.get(editedMeal.id) }
+    savedMeal = mealRepository.get(editedMeal.id)
 
     assertEquals(HttpStatusCode.Accepted, request.response.status())
     assertEquals(editedMeal, savedMeal)
@@ -265,9 +270,14 @@ class MealTests :
     assertThat(getImageFile(existingMeal).exists(), `is`(false))
   }
 
-  @After
-  fun tearDown() = withTestApplication({ main() }) {
-    databaseHelper.reset()
+  private suspend fun testWithReset(vararg test: suspend () -> Unit) {
+    test.forEach {
+      try {
+        it.invoke()
+      } finally {
+        mealRepository.reset()
+      }
+    }
   }
 
   private fun TestApplicationEngine.deleteMeal(meal: Meal) {
